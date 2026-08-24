@@ -1,4 +1,78 @@
-import { IdeaItem, MVPFeature, ScopeCutItem, JudgeEvaluation, ProjectHealth, SolutionAuditResult, ProjectObjective } from '../types';
+import { IdeaItem, MVPFeature, ScopeCutItem, JudgeEvaluation, ProjectHealth, SolutionAuditResult, ProjectObjective, ToolRecommendationResult, RoadmapPhase, ProblemDefinitionResult, PitchCoachResult, DemoFlowResult } from '../types';
+
+const CUSTOM_API_KEY_STORAGE = 'halftime_custom_gemini_api_key';
+
+export function getCustomApiKey(): string | null {
+  try {
+    return localStorage.getItem(CUSTOM_API_KEY_STORAGE) || null;
+  } catch {
+    return null;
+  }
+}
+
+export function setCustomApiKey(key: string): void {
+  try {
+    if (key && key.trim()) {
+      localStorage.setItem(CUSTOM_API_KEY_STORAGE, key.trim());
+    } else {
+      localStorage.removeItem(CUSTOM_API_KEY_STORAGE);
+    }
+  } catch {}
+}
+
+export function removeCustomApiKey(): void {
+  try {
+    localStorage.removeItem(CUSTOM_API_KEY_STORAGE);
+  } catch {}
+}
+
+export async function validateCustomApiKey(apiKey: string): Promise<{ valid: boolean; error?: string }> {
+  try {
+    const res = await fetch('/api/validate-key', {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        'x-gemini-api-key': apiKey.trim(),
+      },
+      body: JSON.stringify({ apiKey: apiKey.trim() }),
+    });
+    const data = await res.json();
+    if (res.ok && data?.success) {
+      return { valid: true };
+    }
+    return { valid: false, error: data?.error || 'Invalid Gemini API key.' };
+  } catch (err: any) {
+    return { valid: false, error: err?.message || 'Network error while testing key.' };
+  }
+}
+
+async function postAiEndpoint(endpoint: string, body: any): Promise<any> {
+  const customKey = getCustomApiKey();
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+  if (customKey) {
+    headers['x-gemini-api-key'] = customKey;
+  }
+
+  const res = await fetch(endpoint, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(body),
+  });
+
+  if (!res.ok) {
+    const errorData = await res.json().catch(() => ({}));
+    if (res.status === 429 || (errorData.error && errorData.error.toLowerCase().includes('quota'))) {
+      throw new Error(
+        'Gemini API quota exhausted on the shared server key. Click the API Key button in the top bar to use your own free key.'
+      );
+    }
+    throw new Error(errorData.error || 'HALFTIME AI is temporarily unavailable. Please try again.');
+  }
+
+  return await res.json();
+}
 
 export interface IdeaGenerationPrompt {
   teamSkills?: string;
@@ -16,7 +90,7 @@ export interface RoadmapResult {
 }
 
 /**
- * 1. AUDIT & ADVANCE USER'S SOLUTION (User inputs exact problem + solution -> AI roasts & supercharges)
+ * 1. AUDIT & ADVANCE USER'S SOLUTION
  */
 export async function auditAndAdvanceSolution(input: {
   problemStatement: string;
@@ -27,22 +101,10 @@ export async function auditAndAdvanceSolution(input: {
   teamSkills?: string;
   hackathonCriteria?: string;
 }): Promise<SolutionAuditResult> {
-  const res = await fetch('/api/ai/advance-solution', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(input),
-  });
-
-  if (!res.ok) {
-    const errorData = await res.json().catch(() => ({}));
-    throw new Error(errorData.error || 'HALFTIME AI is temporarily unavailable. Please try again.');
-  }
-
-  const data = await res.json();
+  const data = await postAiEndpoint('/api/ai/advance-solution', input);
   if (data?.success && data.result) {
     return data.result;
   }
-
   throw new Error(data?.error || 'Failed to advance solution from Gemini.');
 }
 
@@ -50,18 +112,7 @@ export async function auditAndAdvanceSolution(input: {
  * 1b. Legacy Generate Ideas
  */
 export async function generateIdeas(input: IdeaGenerationPrompt): Promise<IdeaItem[]> {
-  const res = await fetch('/api/ai/generate-ideas', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(input),
-  });
-
-  if (!res.ok) {
-    const errorData = await res.json().catch(() => ({}));
-    throw new Error(errorData.error || 'HALFTIME AI is temporarily unavailable. Please try again.');
-  }
-
-  const data = await res.json();
+  const data = await postAiEndpoint('/api/ai/generate-ideas', input);
   if (data?.success && Array.isArray(data.ideas) && data.ideas.length > 0) {
     return data.ideas;
   }
@@ -85,38 +136,27 @@ export async function generateIdeas(input: IdeaGenerationPrompt): Promise<IdeaIt
       tags: ["Advanced", "AI", "User Solution"]
     }];
   }
-
   throw new Error(data?.error || 'Failed to generate ideas from Gemini.');
 }
 
 /**
- * 2. EVALUATE IDEA (Idea Killer / Validator)
+ * 2. EVALUATE IDEA
  */
 export async function evaluateIdea(idea: Partial<IdeaItem>, extra?: {
   availableTime?: number;
   teamSkills?: string;
   hackathonCriteria?: string;
 }): Promise<any> {
-  const res = await fetch('/api/ai/evaluate-idea', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      idea: idea.title,
-      problem: idea.problem,
-      targetUser: idea.targetUser,
-      solution: idea.solution,
-      availableTime: extra?.availableTime,
-      teamSkills: extra?.teamSkills,
-      hackathonCriteria: extra?.hackathonCriteria,
-    }),
+  const data = await postAiEndpoint('/api/ai/evaluate-idea', {
+    idea: idea.title,
+    problem: idea.problem,
+    targetUser: idea.targetUser,
+    solution: idea.solution,
+    availableTime: extra?.availableTime,
+    teamSkills: extra?.teamSkills,
+    hackathonCriteria: extra?.hackathonCriteria,
   });
 
-  if (!res.ok) {
-    const errorData = await res.json().catch(() => ({}));
-    throw new Error(errorData.error || 'HALFTIME AI is temporarily unavailable. Please try again.');
-  }
-
-  const data = await res.json();
   if (data?.success && data.evaluation) {
     const ev = data.evaluation;
     return {
@@ -150,22 +190,10 @@ export async function defineProblem(params: {
   targetUser?: string;
   hackathonName?: string;
 }): Promise<ProblemDefinitionResult> {
-  const res = await fetch('/api/ai/define-problem', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(params),
-  });
-
-  if (!res.ok) {
-    const errorData = await res.json().catch(() => ({}));
-    throw new Error(errorData.error || 'HALFTIME AI is temporarily unavailable. Please try again.');
-  }
-
-  const data = await res.json();
+  const data = await postAiEndpoint('/api/ai/define-problem', params);
   if (data?.success && data.problem) {
     return data.problem;
   }
-
   throw new Error(data?.error || 'Failed to define problem statement.');
 }
 
@@ -182,70 +210,44 @@ export async function generateMVP(ideaTitle: string, remainingHours: number = 16
   targetUser: string;
   coreSolution: string;
   valueProposition: string;
-  coreDemoPath: string;
-  estimatedTotalHours?: number;
+  estimatedTotalHours: number;
   features: MVPFeature[];
+  coreDemoPath: string[];
 }> {
-  const res = await fetch('/api/ai/generate-mvp', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      ideaTitle,
-      remainingHours,
-      problem: details?.problem,
-      targetUser: details?.targetUser,
-      solution: details?.solution,
-      teamSkills: details?.teamSkills,
-    }),
+  const data = await postAiEndpoint('/api/ai/generate-mvp', {
+    ideaTitle,
+    remainingHours,
+    ...details,
   });
 
-  if (!res.ok) {
-    const errorData = await res.json().catch(() => ({}));
-    throw new Error(errorData.error || 'HALFTIME AI is temporarily unavailable. Please try again.');
-  }
-
-  const data = await res.json();
   if (data?.success && data.plan) {
     return data.plan;
   }
-
   throw new Error(data?.error || 'Failed to generate MVP plan from Gemini.');
 }
 
 /**
- * 5. GENERATE BUILD ROADMAP
+ * 5. GENERATE ROADMAP
  */
 export async function generateRoadmap(params: {
   projectTitle: string;
-  mvpFeatures?: MVPFeature[];
+  mvpFeatures: MVPFeature[];
   teamMembers?: string[];
   availableHours?: number;
 }): Promise<RoadmapResult> {
-  const res = await fetch('/api/ai/generate-roadmap', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(params),
-  });
-
-  if (!res.ok) {
-    const errorData = await res.json().catch(() => ({}));
-    throw new Error(errorData.error || 'HALFTIME AI is temporarily unavailable. Please try again.');
-  }
-
-  const data = await res.json();
+  const data = await postAiEndpoint('/api/ai/generate-roadmap', params);
   if (data?.success && data.roadmap) {
     return data.roadmap;
   }
-
-  throw new Error(data?.error || 'Failed to generate roadmap from Gemini.');
+  throw new Error(data?.error || 'Failed to generate build roadmap.');
 }
 
 /**
- * 6. RECOMMEND NEXT ACTION (Halftime Says)
+ * 6. RECOMMEND NEXT ACTION
  */
 export async function recommendNextAction(params: {
-  timeRemaining?: string | number;
-  workRemaining?: string | number;
+  timeRemaining?: number | string;
+  workRemaining?: number | string;
   tasks?: any[];
   teamMembers?: any[];
   currentProject?: string;
@@ -253,27 +255,15 @@ export async function recommendNextAction(params: {
   riskStatus?: string;
   scopeCutApplied?: boolean;
 }): Promise<any> {
-  const res = await fetch('/api/ai/recommend-next-action', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(params),
-  });
-
-  if (!res.ok) {
-    const errorData = await res.json().catch(() => ({}));
-    throw new Error(errorData.error || 'HALFTIME AI is temporarily unavailable. Please try again.');
-  }
-
-  const data = await res.json();
+  const data = await postAiEndpoint('/api/ai/recommend-next-action', params);
   if (data?.success && data.recommendation) {
     return data.recommendation;
   }
-
   throw new Error(data?.error || 'Failed to get recommendation from Gemini.');
 }
 
 /**
- * 7. SCOPE CUTTER - Real Gemini Cuts
+ * 7. SCOPE CUTTER
  */
 export async function recommendScopeCuts(params: {
   project?: string;
@@ -282,22 +272,10 @@ export async function recommendScopeCuts(params: {
   remainingWork?: string;
   judgingCriteria?: string;
 }): Promise<any> {
-  const res = await fetch('/api/ai/recommend-scope-cuts', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(params),
-  });
-
-  if (!res.ok) {
-    const errorData = await res.json().catch(() => ({}));
-    throw new Error(errorData.error || 'HALFTIME AI is temporarily unavailable. Please try again.');
-  }
-
-  const data = await res.json();
+  const data = await postAiEndpoint('/api/ai/recommend-scope-cuts', params);
   if (data?.success && data.scopeCuts) {
     return data.scopeCuts;
   }
-
   throw new Error(data?.error || 'Failed to get scope cut recommendation.');
 }
 
@@ -311,22 +289,10 @@ export async function recommendTool(params: {
   existingStack?: string;
   budgetConstraint?: string;
 }): Promise<ToolRecommendationResult> {
-  const res = await fetch('/api/ai/recommend-tool', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(params),
-  });
-
-  if (!res.ok) {
-    const errorData = await res.json().catch(() => ({}));
-    throw new Error(errorData.error || 'HALFTIME AI is temporarily unavailable. Please try again.');
-  }
-
-  const data = await res.json();
+  const data = await postAiEndpoint('/api/ai/recommend-tool', params);
   if (data?.success && data.recommendation) {
     return data.recommendation;
   }
-
   throw new Error(data?.error || 'Failed to get tool recommendation.');
 }
 
@@ -340,22 +306,10 @@ export async function judgeProject(params: {
   solution?: string;
   features?: any[];
 }): Promise<JudgeEvaluation> {
-  const res = await fetch('/api/ai/judge-project', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(params),
-  });
-
-  if (!res.ok) {
-    const errorData = await res.json().catch(() => ({}));
-    throw new Error(errorData.error || 'HALFTIME AI is temporarily unavailable. Please try again.');
-  }
-
-  const data = await res.json();
+  const data = await postAiEndpoint('/api/ai/judge-project', params);
   if (data?.success && data.evaluation) {
     return data.evaluation;
   }
-
   throw new Error(data?.error || 'Failed to run judge evaluation.');
 }
 
@@ -370,22 +324,10 @@ export async function improvePitch(params: {
   demoMoment?: string;
   impact?: string;
 }): Promise<PitchCoachResult> {
-  const res = await fetch('/api/ai/pitch-coach', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(params),
-  });
-
-  if (!res.ok) {
-    const errorData = await res.json().catch(() => ({}));
-    throw new Error(errorData.error || 'HALFTIME AI is temporarily unavailable. Please try again.');
-  }
-
-  const data = await res.json();
+  const data = await postAiEndpoint('/api/ai/pitch-coach', params);
   if (data?.success && data.pitch) {
     return data.pitch;
   }
-
   throw new Error(data?.error || 'Failed to improve pitch with Gemini.');
 }
 
@@ -397,22 +339,10 @@ export async function generateDemoFlow(params: {
   solution?: string;
   features?: any[];
 }): Promise<DemoFlowResult> {
-  const res = await fetch('/api/ai/generate-demo-flow', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(params),
-  });
-
-  if (!res.ok) {
-    const errorData = await res.json().catch(() => ({}));
-    throw new Error(errorData.error || 'HALFTIME AI is temporarily unavailable. Please try again.');
-  }
-
-  const data = await res.json();
+  const data = await postAiEndpoint('/api/ai/generate-demo-flow', params);
   if (data?.success && data.demoFlow) {
     return data.demoFlow;
   }
-
   throw new Error(data?.error || 'Failed to generate demo flow.');
 }
 
@@ -430,21 +360,9 @@ export async function detectRisks(params: {
   riskFactors: string[];
   recommendedAction: string;
 }> {
-  const res = await fetch('/api/ai/detect-risks', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(params),
-  });
-
-  if (!res.ok) {
-    const errorData = await res.json().catch(() => ({}));
-    throw new Error(errorData.error || 'HALFTIME AI is temporarily unavailable. Please try again.');
-  }
-
-  const data = await res.json();
+  const data = await postAiEndpoint('/api/ai/detect-risks', params);
   if (data?.success && data.risks) {
     return data.risks;
   }
-
   throw new Error(data?.error || 'Failed to detect risks.');
 }

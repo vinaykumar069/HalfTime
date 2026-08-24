@@ -19,6 +19,7 @@ import {
   improvePitchServer,
   generateDemoFlowServer,
   detectRisksServer,
+  validateGeminiKeyServer,
 } from "./server/geminiService.js";
 
 // Rate limiting in-memory store: IP -> { count, expiresAt }
@@ -59,6 +60,10 @@ app.use((req, res, next) => {
 
 const router = express.Router();
 
+const getReqKey = (req: express.Request) => {
+  return ((req.headers["x-gemini-api-key"] as string) || req.body?.customApiKey || "").trim();
+};
+
 // Health endpoint
 router.get("/health", (_req, res) => {
   res.json({
@@ -67,10 +72,25 @@ router.get("/health", (_req, res) => {
   });
 });
 
+// Validate Custom Gemini Key
+router.post("/validate-key", rateLimiter, async (req, res) => {
+  try {
+    const key = getReqKey(req) || (req.body?.apiKey || "").trim();
+    if (!key) {
+      return res.status(400).json({ success: false, error: "API key cannot be empty." });
+    }
+    const result = await validateGeminiKeyServer(key);
+    res.json({ success: true, result });
+  } catch (err: any) {
+    console.error("[API ERROR /validate-key]", err?.message || err);
+    res.status(400).json({ success: false, error: err?.message || "Invalid or unauthorized Gemini API key." });
+  }
+});
+
 // 1. Audit & Advance Solution (No random ideas - User Problem + Solution)
 router.post("/ai/advance-solution", rateLimiter, async (req, res) => {
   try {
-    const result = await auditAndAdvanceIdeaServer(req.body || {});
+    const result = await auditAndAdvanceIdeaServer({ ...(req.body || {}), customApiKey: getReqKey(req) });
     res.json({ success: true, result });
   } catch (err: any) {
     console.error("[API ERROR /ai/advance-solution]", err?.message || err);
@@ -85,7 +105,7 @@ router.post("/ai/advance-solution", rateLimiter, async (req, res) => {
 // 1b. Legacy Generate Ideas Route
 router.post("/ai/generate-ideas", rateLimiter, async (req, res) => {
   try {
-    const ideas = await generateIdeasServer(req.body || {});
+    const ideas = await generateIdeasServer({ ...(req.body || {}), customApiKey: getReqKey(req) });
     res.json({ success: true, ideas });
   } catch (err: any) {
     console.error("[API ERROR /ai/generate-ideas]", err?.message || err);
@@ -100,7 +120,7 @@ router.post("/ai/generate-ideas", rateLimiter, async (req, res) => {
 // 2. Evaluate Idea
 router.post("/ai/evaluate-idea", rateLimiter, async (req, res) => {
   try {
-    const evaluation = await evaluateIdeaServer(req.body || {});
+    const evaluation = await evaluateIdeaServer({ ...(req.body || {}), customApiKey: getReqKey(req) });
     res.json({ success: true, evaluation });
   } catch (err: any) {
     console.error("[API ERROR /ai/evaluate-idea]", err?.message || err);
@@ -115,7 +135,7 @@ router.post("/ai/evaluate-idea", rateLimiter, async (req, res) => {
 // 3. Define the Problem
 router.post("/ai/define-problem", rateLimiter, async (req, res) => {
   try {
-    const problem = await defineProblemServer(req.body || {});
+    const problem = await defineProblemServer({ ...(req.body || {}), customApiKey: getReqKey(req) });
     res.json({ success: true, problem });
   } catch (err: any) {
     console.error("[API ERROR /ai/define-problem]", err?.message || err);
@@ -130,7 +150,7 @@ router.post("/ai/define-problem", rateLimiter, async (req, res) => {
 // 4. Generate MVP Plan
 router.post("/ai/generate-mvp", rateLimiter, async (req, res) => {
   try {
-    const plan = await generateMVPServer(req.body || {});
+    const plan = await generateMVPServer({ ...(req.body || {}), customApiKey: getReqKey(req) });
     res.json({ success: true, plan });
   } catch (err: any) {
     console.error("[API ERROR /ai/generate-mvp]", err?.message || err);
@@ -145,7 +165,7 @@ router.post("/ai/generate-mvp", rateLimiter, async (req, res) => {
 // 5. Generate Build Roadmap
 router.post("/ai/generate-roadmap", rateLimiter, async (req, res) => {
   try {
-    const roadmap = await generateRoadmapServer(req.body || {});
+    const roadmap = await generateRoadmapServer({ ...(req.body || {}), customApiKey: getReqKey(req) });
     res.json({ success: true, roadmap });
   } catch (err: any) {
     console.error("[API ERROR /ai/generate-roadmap]", err?.message || err);
@@ -160,7 +180,7 @@ router.post("/ai/generate-roadmap", rateLimiter, async (req, res) => {
 // 6. Recommend Next Action (Halftime Says)
 router.post("/ai/recommend-next-action", rateLimiter, async (req, res) => {
   try {
-    const recommendation = await recommendNextActionServer(req.body || {});
+    const recommendation = await recommendNextActionServer({ ...(req.body || {}), customApiKey: getReqKey(req) });
     res.json({ success: true, recommendation });
   } catch (err: any) {
     console.error("[API ERROR /ai/recommend-next-action]", err?.message || err);
@@ -175,7 +195,7 @@ router.post("/ai/recommend-next-action", rateLimiter, async (req, res) => {
 // 7. Recommend Scope Cuts
 router.post("/ai/recommend-scope-cuts", rateLimiter, async (req, res) => {
   try {
-    const scopeCuts = await recommendScopeCutsServer(req.body || {});
+    const scopeCuts = await recommendScopeCutsServer({ ...(req.body || {}), customApiKey: getReqKey(req) });
     res.json({ success: true, scopeCuts });
   } catch (err: any) {
     console.error("[API ERROR /ai/recommend-scope-cuts]", err?.message || err);
@@ -190,7 +210,7 @@ router.post("/ai/recommend-scope-cuts", rateLimiter, async (req, res) => {
 // 8. Recommend a Tool
 router.post("/ai/recommend-tool", rateLimiter, async (req, res) => {
   try {
-    const recommendation = await recommendToolServer(req.body || {});
+    const recommendation = await recommendToolServer({ ...(req.body || {}), customApiKey: getReqKey(req) });
     res.json({ success: true, recommendation });
   } catch (err: any) {
     console.error("[API ERROR /ai/recommend-tool]", err?.message || err);
@@ -205,7 +225,7 @@ router.post("/ai/recommend-tool", rateLimiter, async (req, res) => {
 // 9. Judge Project Simulation
 router.post("/ai/judge-project", rateLimiter, async (req, res) => {
   try {
-    const evaluation = await judgeProjectServer(req.body || {});
+    const evaluation = await judgeProjectServer({ ...(req.body || {}), customApiKey: getReqKey(req) });
     res.json({ success: true, evaluation });
   } catch (err: any) {
     console.error("[API ERROR /ai/judge-project]", err?.message || err);
@@ -220,7 +240,7 @@ router.post("/ai/judge-project", rateLimiter, async (req, res) => {
 // 10. Pitch Coach
 router.post("/ai/pitch-coach", rateLimiter, async (req, res) => {
   try {
-    const pitch = await improvePitchServer(req.body || {});
+    const pitch = await improvePitchServer({ ...(req.body || {}), customApiKey: getReqKey(req) });
     res.json({ success: true, pitch });
   } catch (err: any) {
     console.error("[API ERROR /ai/pitch-coach]", err?.message || err);
@@ -235,7 +255,7 @@ router.post("/ai/pitch-coach", rateLimiter, async (req, res) => {
 // 11. Generate Demo Flow
 router.post("/ai/generate-demo-flow", rateLimiter, async (req, res) => {
   try {
-    const demoFlow = await generateDemoFlowServer(req.body || {});
+    const demoFlow = await generateDemoFlowServer({ ...(req.body || {}), customApiKey: getReqKey(req) });
     res.json({ success: true, demoFlow });
   } catch (err: any) {
     console.error("[API ERROR /ai/generate-demo-flow]", err?.message || err);
@@ -250,7 +270,7 @@ router.post("/ai/generate-demo-flow", rateLimiter, async (req, res) => {
 // 12. Detect Risks
 router.post("/ai/detect-risks", rateLimiter, async (req, res) => {
   try {
-    const risks = await detectRisksServer(req.body || {});
+    const risks = await detectRisksServer({ ...(req.body || {}), customApiKey: getReqKey(req) });
     res.json({ success: true, risks });
   } catch (err: any) {
     console.error("[API ERROR /ai/detect-risks]", err?.message || err);

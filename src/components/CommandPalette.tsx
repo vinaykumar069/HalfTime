@@ -5,12 +5,13 @@ import {
   Lightbulb, 
   Layers, 
   CheckSquare, 
-  Cpu, 
+  Wrench, 
   Scale, 
   Rocket, 
   Scissors, 
   Sparkles, 
   Play, 
+  Key,
   X 
 } from 'lucide-react';
 import { NavigationTab } from '../types';
@@ -22,6 +23,7 @@ interface CommandPaletteProps {
   onTriggerScopeCut: () => void;
   onTriggerShipMode: () => void;
   onStartNextTask: () => void;
+  onOpenApiKeyModal?: () => void;
 }
 
 export const CommandPalette: React.FC<CommandPaletteProps> = ({
@@ -31,6 +33,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
   onTriggerScopeCut,
   onTriggerShipMode,
   onStartNextTask,
+  onOpenApiKeyModal,
 }) => {
   const [search, setSearch] = useState('');
   const inputRef = useRef<HTMLInputElement>(null);
@@ -68,6 +71,13 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       action: () => { onSelectTab('overview'); onClose(); }
     },
     {
+      id: 'apikey',
+      title: 'Gemini API Key Settings (Bring Your Own Key)',
+      category: 'Settings',
+      icon: <Key className="w-4 h-4 text-[#00F0FF]" />,
+      action: () => { if (onOpenApiKeyModal) onOpenApiKeyModal(); onClose(); }
+    },
+    {
       id: 'cut',
       title: 'Execute Scope Cut (−3h 45m)',
       category: 'Quick Action',
@@ -97,7 +107,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
     },
     {
       id: 'idea',
-      title: 'Open Idea Lab & Generate New Concepts',
+      title: 'Open Idea Lab & Forge New Concepts',
       category: 'Navigation',
       icon: <Lightbulb className="w-4 h-4 text-[#00D2FF]" />,
       action: () => { onSelectTab('idea-lab'); onClose(); }
@@ -111,21 +121,21 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
     },
     {
       id: 'tasks',
-      title: 'Manage Task Board & Sprint',
+      title: 'Manage Battle Board & Sprint Tasks',
       category: 'Navigation',
       icon: <CheckSquare className="w-4 h-4 text-[#00F59B]" />,
       action: () => { onSelectTab('tasks'); onClose(); }
     },
     {
       id: 'resources',
-      title: 'Check AI Token & Resource Pressure',
-      category: 'Monitoring',
-      icon: <Cpu className="w-4 h-4 text-[#8B5CF6]" />,
+      title: 'Open Tool Radar (Best Stack & SDKs for Tasks)',
+      category: 'Tools',
+      icon: <Wrench className="w-4 h-4 text-[#00FF88]" />,
       action: () => { onSelectTab('resources'); onClose(); }
     },
     {
       id: 'launch',
-      title: 'View Launch Readiness Checklist (78%)',
+      title: 'View Pitch & Ship Readiness Checklist',
       category: 'Milestone',
       icon: <Rocket className="w-4 h-4 text-[#FF2A5F]" />,
       action: () => { onSelectTab('launch'); onClose(); }

@@ -9,22 +9,38 @@ export const GEMINI_MODEL = "gemini-3.6-flash";
 
 let aiClient: GoogleGenAI | null = null;
 
-export function getGeminiClient(): GoogleGenAI | null {
-  const apiKey = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY;
+export function getGeminiClient(customApiKey?: string): GoogleGenAI | null {
+  const apiKey = (customApiKey && customApiKey.trim()) || process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
   if (!apiKey) {
     return null;
   }
-  if (!aiClient) {
-    aiClient = new GoogleGenAI({
-      apiKey,
-      httpOptions: {
-        headers: {
-          'User-Agent': 'aistudio-build',
-        },
+  return new GoogleGenAI({
+    apiKey,
+    httpOptions: {
+      headers: {
+        'User-Agent': 'aistudio-build',
       },
-    });
+    },
+  });
+}
+
+/**
+ * 0. VALIDATE CUSTOM API KEY
+ */
+export async function validateGeminiKeyServer(customApiKey: string) {
+  const ai = getGeminiClient(customApiKey);
+  if (!ai) {
+    throw new Error("API key cannot be empty.");
   }
-  return aiClient;
+  const response = await ai.models.generateContent({
+    model: GEMINI_MODEL,
+    contents: "Ping. Return JSON: {\"status\":\"ok\"}",
+    config: {
+      responseMimeType: "application/json",
+    },
+  });
+  const text = response.text?.trim();
+  return { valid: true, text };
 }
 
 /**
@@ -38,10 +54,11 @@ export async function auditAndAdvanceIdeaServer(params: {
   availableTimeHours?: number;
   teamSkills?: string;
   hackathonCriteria?: string;
+  customApiKey?: string;
 }) {
-  const ai = getGeminiClient();
+  const ai = getGeminiClient(params.customApiKey);
   if (!ai) {
-    throw new Error("GEMINI_API_KEY is not configured on the server.");
+    throw new Error("GEMINI_API_KEY is not configured on the server. Please add your own Gemini API key.");
   }
 
   const prompt = `You are HALFTIME's brutally honest AI Co-Founder and Senior Hackathon Judge.
@@ -186,7 +203,7 @@ export async function evaluateIdeaServer(params: {
   teamSkills?: string;
   hackathonCriteria?: string;
 }) {
-  const ai = getGeminiClient();
+  const ai = getGeminiClient(params.customApiKey);
   if (!ai) {
     throw new Error("GEMINI_API_KEY is not configured on the server.");
   }
@@ -272,7 +289,7 @@ export async function defineProblemServer(params: {
   targetUser?: string;
   hackathonName?: string;
 }) {
-  const ai = getGeminiClient();
+  const ai = getGeminiClient(params.customApiKey);
   if (!ai) {
     throw new Error("GEMINI_API_KEY is not configured on the server.");
   }
@@ -339,7 +356,7 @@ export async function generateMVPServer(params: {
   remainingHours?: number;
   teamSkills?: string;
 }) {
-  const ai = getGeminiClient();
+  const ai = getGeminiClient(params.customApiKey);
   if (!ai) {
     throw new Error("GEMINI_API_KEY is not configured on the server.");
   }
@@ -444,7 +461,7 @@ export async function generateRoadmapServer(params: {
   teamMembers?: string[];
   availableHours?: number;
 }) {
-  const ai = getGeminiClient();
+  const ai = getGeminiClient(params.customApiKey);
   if (!ai) {
     throw new Error("GEMINI_API_KEY is not configured on the server.");
   }
@@ -539,7 +556,7 @@ export async function recommendNextActionServer(params: {
   riskStatus?: string;
   scopeCutApplied?: boolean;
 }) {
-  const ai = getGeminiClient();
+  const ai = getGeminiClient(params.customApiKey);
   if (!ai) {
     throw new Error("GEMINI_API_KEY is not configured on the server.");
   }
@@ -602,7 +619,7 @@ export async function recommendScopeCutsServer(params: {
   remainingWork?: string;
   judgingCriteria?: string;
 }) {
-  const ai = getGeminiClient();
+  const ai = getGeminiClient(params.customApiKey);
   if (!ai) {
     throw new Error("GEMINI_API_KEY is not configured on the server.");
   }
@@ -666,7 +683,7 @@ export async function recommendToolServer(params: {
   existingStack?: string;
   budgetConstraint?: string;
 }) {
-  const ai = getGeminiClient();
+  const ai = getGeminiClient(params.customApiKey);
   if (!ai) {
     throw new Error("GEMINI_API_KEY is not configured on the server.");
   }
@@ -722,7 +739,7 @@ export async function judgeProjectServer(params: {
   features?: any[];
   scopeCutApplied?: boolean;
 }) {
-  const ai = getGeminiClient();
+  const ai = getGeminiClient(params.customApiKey);
   if (!ai) {
     throw new Error("GEMINI_API_KEY is not configured on the server.");
   }
@@ -841,7 +858,7 @@ export async function improvePitchServer(params: {
   demoMoment?: string;
   impact?: string;
 }) {
-  const ai = getGeminiClient();
+  const ai = getGeminiClient(params.customApiKey);
   if (!ai) {
     throw new Error("GEMINI_API_KEY is not configured on the server.");
   }
@@ -915,7 +932,7 @@ export async function generateDemoFlowServer(params: {
   solution?: string;
   features?: any[];
 }) {
-  const ai = getGeminiClient();
+  const ai = getGeminiClient(params.customApiKey);
   if (!ai) {
     throw new Error("GEMINI_API_KEY is not configured on the server.");
   }
@@ -994,7 +1011,7 @@ export async function detectRisksServer(params: {
   criticalTasksCount: number;
   incompleteCriticalTasks: string[];
 }) {
-  const ai = getGeminiClient();
+  const ai = getGeminiClient(params.customApiKey);
   if (!ai) {
     throw new Error("GEMINI_API_KEY is not configured on the server.");
   }

@@ -61,6 +61,8 @@ import { ReasoningModal } from './components/modals/ReasoningModal';
 import { ShipModeModal } from './components/ShipModeModal';
 import { ProjectSwitcherModal } from './components/modals/ProjectSwitcherModal';
 import { AuthModal, AuthModalView, UnconfirmedSource } from './components/modals/AuthModal';
+import { ApiKeyModal } from './components/modals/ApiKeyModal';
+import { getCustomApiKey } from './services/aiService';
 import { StorageConfigNotice } from './components/StorageConfigNotice';
 import { OnboardingScreen } from './components/onboarding/OnboardingScreen';
 import { OverviewDashboard } from './components/overview/OverviewDashboard';
@@ -118,6 +120,8 @@ export default function App() {
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [isReasoningOpen, setIsReasoningOpen] = useState(false);
   const [isShipModeOpen, setIsShipModeOpen] = useState(false);
+  const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false);
+  const [hasCustomApiKey, setHasCustomApiKey] = useState<boolean>(() => Boolean(getCustomApiKey()));
 
   // Active Task Timer
   const [isTaskActive, setIsTaskActive] = useState(true);
@@ -849,6 +853,8 @@ export default function App() {
           onOpenShipMode={() => setIsShipModeOpen(true)}
           onOpenProjectSwitcher={() => setIsProjectSwitcherOpen(true)}
           onOpenAuth={() => setIsAuthModalOpen(true)}
+          onOpenApiKeyModal={() => setIsApiKeyModalOpen(true)}
+          hasCustomApiKey={hasCustomApiKey}
           shipModeReady={launchChecklist.filter(i => i.status === 'COMPLETE').length >= 6}
           countdownDisplay={countdownInfo.display}
           countdownStatus={countdownInfo.status}
@@ -997,6 +1003,7 @@ export default function App() {
         onTriggerScopeCut={handleExecuteScopeCut}
         onTriggerShipMode={() => setIsShipModeOpen(true)}
         onStartNextTask={handleStartNextTask}
+        onOpenApiKeyModal={() => setIsApiKeyModalOpen(true)}
       />
 
       {/* AI Reasoning Deep Dive Modal */}
@@ -1039,6 +1046,16 @@ export default function App() {
         initialView={authModalView}
         initialEmail={authModalEmail}
         initialUnconfirmedSource={authModalUnconfirmedSource}
+      />
+
+      {/* Gemini API Key BYOK Modal */}
+      <ApiKeyModal
+        isOpen={isApiKeyModalOpen}
+        onClose={() => setIsApiKeyModalOpen(false)}
+        onKeyChanged={() => {
+          setHasCustomApiKey(Boolean(getCustomApiKey()));
+          addToast('Gemini API key settings updated!', 'success');
+        }}
       />
 
       {/* Global Toast Container */}
