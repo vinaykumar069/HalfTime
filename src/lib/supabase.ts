@@ -1,8 +1,8 @@
 import { createClient, SupabaseClient, User } from '@supabase/supabase-js';
 
 const env = (typeof import.meta !== 'undefined' && (import.meta as any).env) ? (import.meta as any).env : {};
-const rawSupabaseUrl = String(env.VITE_SUPABASE_URL || '').trim();
-const rawSupabaseAnonKey = String(env.VITE_SUPABASE_ANON_KEY || '').trim();
+const rawSupabaseUrl = String(env.VITE_SUPABASE_URL || 'https://uyowmsbwxjhnyixzgnkk.supabase.co').trim();
+const rawSupabaseAnonKey = String(env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_7R1rIa6Y57aGwoh0A4CZAw_MQChtGxo').trim();
 
 function isValidHttpUrl(stringUrl: string): boolean {
   if (!stringUrl || typeof stringUrl !== 'string') return false;
