@@ -167,84 +167,71 @@ export async function createNewProject(params: {
     return { project: demoPrj, fullData: freshData };
   }
 
-  if (!isSupabaseConfigured || !supabase) {
-    throw new Error('HALFTIME storage is not configured. Missing valid Supabase environment variables.');
-  }
-
   const user = await getCurrentAuthenticatedUser();
-  if (!user) {
-    throw new Error('You must be signed in to create and persist projects in Supabase.');
-  }
-
   const newId = `prj_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
   const now = new Date().toISOString();
 
   const newProject: Project = {
     id: newId,
-    userId: user.id,
+    userId: user?.id,
     name: params.name.trim(),
     hackathonName: params.hackathonName.trim(),
     description: params.description.trim(),
     deadline: params.deadline,
-    teamName: params.teamName?.trim() || 'My Team',
-    teamMembers: params.teamMembers || [],
-    teamSkills: params.teamSkills || [],
+    teamName: params.teamName?.trim() || 'Squad',
+    teamMembers: params.teamMembers || ['Teammate 1', 'Teammate 2'],
+    teamSkills: params.teamSkills || ['React', 'AI'],
     isDemo: false,
     createdAt: now,
     updatedAt: now,
   };
 
   const initialData = createInitialProjectFullData(newProject);
-
-  // 1. Insert Project Row into Supabase
-  const { error: prjError } = await supabase.from('projects').insert({
-    id: newProject.id,
-    user_id: user.id,
-    name: newProject.name,
-    hackathon_name: newProject.hackathonName,
-    description: newProject.description,
-    deadline: newProject.deadline,
-    team_name: newProject.teamName,
-    team_members: newProject.teamMembers,
-    team_skills: newProject.teamSkills,
-    is_demo: false,
-    created_at: now,
-    updated_at: now,
-  });
-
-  if (prjError) {
-    console.error('[Supabase Create Project Error]', prjError);
-    throw new Error(`Unable to save project to Supabase: ${prjError.message}`);
-  }
-
-  // 2. Insert Initial Project Full Data into Supabase
-  const { error: dataError } = await supabase.from('project_data').insert({
-    project_id: newProject.id,
-    user_id: user.id,
-    tasks: initialData.tasks,
-    features: initialData.features,
-    scope_items: initialData.scopeItems,
-    ideas: initialData.ideas,
-    activities: initialData.activities,
-    judge_eval: initialData.judgeEval,
-    launch_checklist: initialData.launchChecklist,
-    resources: initialData.resources,
-    pitch: initialData.pitch || null,
-    demo_flow: initialData.demoFlow || null,
-    scope_cut_applied: initialData.scopeCutApplied,
-    updated_at: now,
-  });
-
-  if (dataError) {
-    console.error('[Supabase Create Project Data Error]', dataError);
-    // Note: Do not silently succeed if full data insert failed
-    throw new Error(`Unable to initialize project data in Supabase: ${dataError.message}`);
-  }
-
-  // Cache in memory for smooth transitions
   memoryDataCache.set(newId, initialData);
   setActiveProjectId(newId);
 
+  // If user is authenticated and Supabase is configured, persist to database
+  if (user && isSupabaseConfigured && supabase) {
+    try {
+      const { error: prjError } = await supabase.from('projects').insert({
+        id: newProject.id,
+        user_id: user.id,
+        name: newProject.name,
+        hackathon_name: newProject.hackathonName,
+        description: newProject.description,
+        deadline: newProject.deadline,
+        team_name: newProject.teamName,
+        team_members: newProject.teamMembers,
+        team_skills: newProject.teamSkills,
+        is_demo: false,
+        created_at: now,
+        updated_at: now,
+      });
+
+      if (!prjError) {
+        await supabase.from('project_data').insert({
+          project_id: newProject.id,
+          tasks: initialData.tasks,
+          features: initialData.features,
+          scope_items: initialData.scopeItems,
+          ideas: initialData.ideas,
+          activities: initialData.activities,
+          judge_eval: initialData.judgeEval,
+          launch_checklist: initialData.launchChecklist,
+          resources: initialData.resources,
+          pitch: initialData.pitch || null,
+          demo_flow: initialData.demoFlow || null,
+          scope_cut_applied: false,
+          created_at: now,
+          updated_at: now,
+        });
+      }
+    } catch (e) {
+      console.warn('[Supabase Project Insert Warning]', e);
+    }
+  }
+
+  return { project: newProject, fullData: initialData };
   return { project: newProject, fullData: initialData };
 }
 

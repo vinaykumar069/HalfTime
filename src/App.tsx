@@ -78,9 +78,9 @@ export default function App() {
   const [isDemoMode, setIsDemoMode] = useState<boolean>(isExplicitDemoMode());
   const [currentUser, setCurrentUser] = useState<any>(null);
 
-  // Projects & Multi-User State - Instant Active Defaults
-  const [projectsList, setProjectsList] = useState<Project[]>([DEMO_PROJECT]);
-  const [activeProject, setActiveProject] = useState<Project | null>(DEMO_PROJECT);
+  // Projects & Multi-User State
+  const [projectsList, setProjectsList] = useState<Project[]>([]);
+  const [activeProject, setActiveProject] = useState<Project | null>(null);
   const [isOnboarding, setIsOnboarding] = useState<boolean>(false);
   const [isProjectSwitcherOpen, setIsProjectSwitcherOpen] = useState<boolean>(false);
   
@@ -162,9 +162,8 @@ export default function App() {
       setCurrentUser(user);
 
       if (!user) {
-        // Seamlessly provide full workspace access so user is never blocked by a login screen
-        setProjectsList([DEMO_PROJECT]);
-        await switchProject(DEMO_PROJECT.id, [DEMO_PROJECT]);
+        setProjectsList([]);
+        setActiveProject(null);
         setIsInitializing(false);
         return;
       }
@@ -684,7 +683,7 @@ export default function App() {
   const currentTeamName = activeProject?.teamName || 'DOOM';
   const isDemo = Boolean(activeProject?.isDemo || isDemoMode);
 
-  // First-time onboarding screen (only when user actively triggers new project creation)
+  // 1. First-time onboarding screen (Idea & Stack Form)
   if (isOnboarding && !activeProject) {
     return (
       <>
@@ -694,6 +693,75 @@ export default function App() {
         />
         <ToastContainer toasts={toasts} onDismiss={dismissToast} />
       </>
+    );
+  }
+
+  // 2. Unauthenticated / No Active Project Welcome Screen
+  if (!activeProject && !isDemo) {
+    return (
+      <div className="min-h-screen bg-[#07090E] text-[#F1F5F9] flex flex-col items-center justify-center p-4 sm:p-6 relative overflow-hidden selection:bg-[#00FF88] selection:text-[#07090E]">
+        {/* Ambient atmosphere glow */}
+        <div className="fixed top-[-100px] right-[-100px] w-[500px] h-[500px] bg-[#00F0FF] opacity-[0.05] blur-[150px] rounded-full pointer-events-none" />
+        <div className="fixed bottom-[-100px] left-[-100px] w-[500px] h-[500px] bg-[#00FF88] opacity-[0.05] blur-[150px] rounded-full pointer-events-none" />
+
+        <div className="w-full max-w-lg rounded-[36px] bg-[#0A0E18] border border-white/10 p-8 sm:p-10 shadow-2xl relative z-10 text-center space-y-8 animate-in fade-in zoom-in-95 duration-200">
+          <div className="flex flex-col items-center">
+            <div className="mb-3">
+              <BrandLogo size="lg" showLabel={false} animated={true} />
+            </div>
+            <span className="text-[11px] font-mono font-bold tracking-widest text-[#00F0FF] uppercase mb-1">
+              TACTICAL HACKATHON MISSION CONTROL
+            </span>
+            <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-white font-display">
+              WELCOME TO HALFTIME
+            </h1>
+            <p className="text-xs sm:text-sm text-[#94A3B8] mt-2 max-w-sm">
+              Stop building the wrong features. Recalculate your time and ship a winning live demo.
+            </p>
+          </div>
+
+          <div className="space-y-3.5 pt-2">
+            {/* Primary: Create Project */}
+            <button
+              onClick={() => setIsOnboarding(true)}
+              className="w-full py-4 px-5 rounded-2xl bg-[#00FF88] hover:brightness-110 text-[#07090E] font-mono text-xs font-black flex items-center justify-center gap-2 shadow-lg shadow-[#00FF88]/20 transition-all cursor-pointer group"
+            >
+              <Sparkles className="w-4 h-4 text-[#07090E]" />
+              <span>CREATE HACKATHON PROJECT (IDEA &amp; STACK) →</span>
+            </button>
+
+            {/* Secondary: Sign in / Sign up */}
+            <button
+              onClick={() => setIsAuthModalOpen(true)}
+              className="w-full py-3.5 px-5 rounded-2xl bg-white/[0.04] hover:bg-white/[0.08] text-white border border-white/15 font-mono text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer"
+            >
+              <LogIn className="w-4 h-4 text-[#00F0FF]" />
+              <span>SIGN IN / SIGN UP (CLOUD SYNC)</span>
+            </button>
+
+            {/* Tertiary: Explore Sandbox */}
+            <button
+              onClick={handleEnterDemoMode}
+              className="w-full py-3 px-4 rounded-xl text-[#64748B] hover:text-[#94A3B8] font-mono text-[11px] flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+            >
+              <span>Or explore interactive Demo Sandbox (Team DOOM) →</span>
+            </button>
+          </div>
+        </div>
+
+        <AuthModal
+          isOpen={isAuthModalOpen}
+          onClose={() => {
+            setIsAuthModalOpen(false);
+            setAuthModalView('signin');
+          }}
+          onAuthChange={loadUserProjectsAndState}
+          initialView={authModalView}
+          initialEmail={authModalEmail}
+          initialUnconfirmedSource={authModalUnconfirmedSource}
+        />
+        <ToastContainer toasts={toasts} onDismiss={dismissToast} />
+      </div>
     );
   }
 
