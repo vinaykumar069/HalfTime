@@ -219,57 +219,22 @@ export const ToolRadarView: React.FC<ToolRadarViewProps> = ({
 
   return (
     <div className="space-y-8 animate-in fade-in duration-300">
-      {/* 1. Header Banner */}
-      <div className="rounded-3xl bg-gradient-to-r from-emerald-950/40 via-[#0A0E18] to-cyan-950/30 border border-white/10 p-6 sm:p-8 backdrop-blur-xl relative overflow-hidden">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
-          <div className="space-y-2 max-w-2xl">
-            <div className="flex items-center gap-2">
-              <span className="px-3 py-1 rounded-full bg-[#00FF88]/10 border border-[#00FF88]/20 text-[#00FF88] text-xs font-mono font-bold flex items-center gap-1.5">
-                <Wrench className="w-3.5 h-3.5" />
-                TOOL RADAR &amp; STACK ADVISOR
-              </span>
-              <span className="text-xs font-mono text-[#94A3B8]">
-                {tasks.length} sprint tasks mapped
-              </span>
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-black text-white font-display">
-              Best-Performing Tools For Your Tasks
-            </h1>
-            <p className="text-xs sm:text-sm text-[#94A3B8] leading-relaxed">
-              Never waste 3 hours building boilerplate from scratch. HALFTIME analyzes every active ticket on your Battle Board and matches the fastest, battle-tested modern tools, SDKs, and APIs for maximum hackathon velocity.
-            </p>
-          </div>
-
-          <div className="flex flex-col sm:flex-row lg:flex-col gap-3 min-w-[240px]">
-            <div className="p-3.5 rounded-2xl bg-black/50 border border-white/10 flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-[#00FF88]/10 text-[#00FF88] flex items-center justify-center font-mono font-bold shrink-0">
-                ⚡
-              </div>
-              <div className="text-xs">
-                <div className="font-mono text-[#64748B] text-[10px] uppercase font-bold">Estimated Time Saved</div>
-                <div className="font-mono font-black text-white text-sm">~18.5 Hackathon Hours</div>
-              </div>
-            </div>
-
-            <div className="p-3.5 rounded-2xl bg-black/50 border border-white/10 flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-[#00F0FF]/10 text-[#00F0FF] flex items-center justify-center font-mono font-bold shrink-0">
-                🚀
-              </div>
-              <div className="text-xs">
-                <div className="font-mono text-[#64748B] text-[10px] uppercase font-bold">Recommended Speed Index</div>
-                <div className="font-mono font-black text-[#00FF88] text-sm">98.2 / 100 Velocity</div>
-              </div>
-            </div>
-          </div>
-        </div>
+      {/* 1. Clean Header */}
+      <div className="space-y-1.5 pb-3 border-b border-white/10">
+        <h1 className="text-2xl sm:text-3xl font-black text-white font-display">
+          Best-Performing Tools For Your Tasks
+        </h1>
+        <p className="text-xs sm:text-sm text-[#94A3B8] max-w-3xl leading-relaxed">
+          Recommended tools, libraries, and SDKs matched to your project tasks for fast hackathon execution.
+        </p>
       </div>
 
-      {/* 2. Custom AI Tool Matcher Card */}
-      <div className="rounded-3xl bg-[#0A0E18] border border-white/10 p-6 shadow-xl relative overflow-hidden">
-        <div className="flex items-center gap-2 mb-4">
-          <Sparkles className="w-4 h-4 text-[#00FF88]" />
+      {/* 2. Custom Tool Lookup Card */}
+      <div className="rounded-2xl bg-[#0A0E18] border border-white/10 p-5 shadow-lg relative overflow-hidden">
+        <div className="flex items-center gap-2 mb-3">
+          <Wrench className="w-4 h-4 text-[#00FF88]" />
           <span className="text-xs font-mono font-bold uppercase text-white tracking-wider">
-            Ask Gemini: What is the fastest tool for a custom task?
+            Find the Best Tool for a Custom Task
           </span>
         </div>
 
@@ -277,27 +242,24 @@ export const ToolRadarView: React.FC<ToolRadarViewProps> = ({
           <div className="relative flex-1 w-full">
             <input
               type="text"
-              placeholder="e.g. I need to parse complex PDF resumes in 300ms without GPU..."
+              placeholder="e.g. I need to parse PDF resumes or handle multi-user WebSockets..."
               value={customTaskQuery}
               onChange={e => setCustomTaskQuery(e.target.value)}
-              className="w-full px-4 py-3 rounded-2xl bg-black/60 border border-white/15 text-xs text-white placeholder-[#64748B] focus:outline-none focus:border-[#00FF88] transition-colors"
+              className="w-full px-4 py-2.5 rounded-xl bg-black/60 border border-white/15 text-xs text-white placeholder-[#64748B] focus:outline-none focus:border-[#00FF88] transition-colors"
             />
           </div>
           <button
             type="submit"
             disabled={isAskingAi || !customTaskQuery.trim()}
-            className="w-full sm:w-auto px-6 py-3 rounded-2xl bg-[#00FF88] hover:brightness-110 disabled:opacity-50 text-[#07090E] font-mono text-xs font-black flex items-center justify-center gap-2 cursor-pointer transition-all shrink-0"
+            className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-[#00FF88] hover:brightness-110 disabled:opacity-50 text-[#07090E] font-mono text-xs font-bold flex items-center justify-center gap-2 cursor-pointer transition-all shrink-0"
           >
             {isAskingAi ? (
               <>
-                <Sparkles className="w-4 h-4 animate-spin text-[#07090E]" />
-                <span>MATCHING BEST TOOL...</span>
+                <Sparkles className="w-3.5 h-3.5 animate-spin text-[#07090E]" />
+                <span>Searching Tools...</span>
               </>
             ) : (
-              <>
-                <Zap className="w-4 h-4 text-[#07090E]" />
-                <span>FIND BEST TOOL →</span>
-              </>
+              <span>Get Recommendation →</span>
             )}
           </button>
         </form>
@@ -309,19 +271,18 @@ export const ToolRadarView: React.FC<ToolRadarViewProps> = ({
         )}
 
         {aiCustomResult && (
-          <div className="mt-5 p-5 rounded-2xl bg-black/80 border border-[#00FF88]/30 space-y-3 animate-in fade-in duration-200">
+          <div className="mt-4 p-4 rounded-xl bg-black/80 border border-white/15 space-y-2.5 animate-in fade-in duration-200">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-[#00FF88] animate-ping" />
                 <span className="font-mono font-bold text-white text-sm">
                   {aiCustomResult.recommendedTool}
                 </span>
-                <span className="px-2.5 py-0.5 rounded-full bg-white/10 text-[10px] font-mono text-[#00F0FF]">
+                <span className="px-2 py-0.5 rounded-md bg-white/10 text-[10px] font-mono text-[#00F0FF]">
                   {aiCustomResult.setupCost}
                 </span>
               </div>
-              <span className="text-xs font-mono font-bold text-[#00FF88]">
-                ⚡ {aiCustomResult.estimatedTimeSaved}
+              <span className="text-xs font-mono text-[#94A3B8]">
+                {aiCustomResult.estimatedTimeSaved}
               </span>
             </div>
 
@@ -346,9 +307,9 @@ export const ToolRadarView: React.FC<ToolRadarViewProps> = ({
             <button
               key={cat}
               onClick={() => setSelectedCategory(cat)}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-mono font-bold transition-all whitespace-nowrap cursor-pointer ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-mono font-bold transition-all whitespace-nowrap cursor-pointer ${
                 selectedCategory === cat
-                  ? 'bg-[#00FF88] text-[#07090E] shadow-sm shadow-[#00FF88]/20'
+                  ? 'bg-[#00FF88] text-[#07090E]'
                   : 'bg-white/[0.04] hover:bg-white/[0.08] text-[#94A3B8] hover:text-white border border-white/5'
               }`}
             >
@@ -373,7 +334,7 @@ export const ToolRadarView: React.FC<ToolRadarViewProps> = ({
       {/* 4. Task-by-Task Tool Matching Cards */}
       <div className="space-y-4">
         {filteredMatches.length === 0 ? (
-          <div className="p-12 text-center rounded-3xl bg-[#0A0E18] border border-white/10 text-[#94A3B8] font-mono text-xs space-y-2">
+          <div className="p-10 text-center rounded-2xl bg-[#0A0E18] border border-white/10 text-[#94A3B8] font-mono text-xs space-y-1.5">
             <div>No matching tasks found for "{searchQuery}".</div>
             <div className="text-[#64748B]">Try searching another keyword or create tickets on the Battle Board.</div>
           </div>
@@ -385,10 +346,10 @@ export const ToolRadarView: React.FC<ToolRadarViewProps> = ({
             return (
               <div 
                 key={cardId}
-                className="rounded-2xl bg-[#0A0E18] border border-white/10 hover:border-white/20 p-5 transition-all shadow-md space-y-4 group"
+                className="rounded-2xl bg-[#0A0E18] border border-white/10 hover:border-white/20 p-5 transition-all shadow-md space-y-3.5 group"
               >
                 {/* Top Row: Task Name vs Best Tool */}
-                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pb-3 border-b border-white/10">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-white/10">
                   <div className="space-y-1">
                     <div className="flex items-center gap-2">
                       <span className="px-2 py-0.5 rounded-md bg-white/[0.06] font-mono text-[10px] text-[#94A3B8] uppercase font-bold">
@@ -398,17 +359,13 @@ export const ToolRadarView: React.FC<ToolRadarViewProps> = ({
                         {match.category}
                       </span>
                     </div>
-                    <h3 className="font-bold text-white text-sm sm:text-base flex items-center gap-2">
-                      <span>{task.title}</span>
+                    <h3 className="font-bold text-white text-sm sm:text-base">
+                      {task.title}
                     </h3>
                   </div>
 
-                  <div className="flex items-center gap-3 self-start lg:self-center">
-                    <div className="px-3 py-1 rounded-xl bg-[#00FF88]/10 border border-[#00FF88]/20 flex items-center gap-2 font-mono text-xs text-[#00FF88] font-bold">
-                      <Zap className="w-3.5 h-3.5" />
-                      <span>{match.speedScore}/100 Speed</span>
-                    </div>
-                    <div className="px-3 py-1 rounded-xl bg-white/[0.04] border border-white/10 font-mono text-xs text-[#CBD5E1]">
+                  <div className="flex items-center gap-2 self-start sm:self-center">
+                    <div className="px-2.5 py-1 rounded-lg bg-white/[0.04] border border-white/10 font-mono text-xs text-[#CBD5E1]">
                       ⏱️ {match.setupTime}
                     </div>
                   </div>
@@ -419,8 +376,8 @@ export const ToolRadarView: React.FC<ToolRadarViewProps> = ({
                   {/* Tool Badge & Description */}
                   <div className="md:col-span-8 space-y-2">
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-mono text-[#64748B] uppercase font-bold">Best-Performing Tool:</span>
-                      <span className="text-sm font-black text-white font-mono bg-white/[0.06] px-2.5 py-1 rounded-lg border border-white/10">
+                      <span className="text-xs font-mono text-[#64748B] uppercase font-bold">Recommended:</span>
+                      <span className="text-xs font-bold text-white font-mono bg-white/[0.06] px-2.5 py-1 rounded-lg border border-white/10">
                         {match.tool}
                       </span>
                     </div>
@@ -434,7 +391,7 @@ export const ToolRadarView: React.FC<ToolRadarViewProps> = ({
                     {match.installCommand && (
                       <button
                         onClick={() => handleCopy(match.installCommand!, cardId)}
-                        className="w-full md:w-auto px-3 py-2 rounded-xl bg-black/80 hover:bg-black border border-white/15 hover:border-[#00FF88]/50 text-xs font-mono text-[#CBD5E1] flex items-center justify-between md:justify-end gap-2 transition cursor-pointer group"
+                        className="w-full md:w-auto px-3 py-1.5 rounded-xl bg-black/80 hover:bg-black border border-white/15 hover:border-[#00FF88]/50 text-xs font-mono text-[#CBD5E1] flex items-center justify-between md:justify-end gap-2 transition cursor-pointer group"
                         title="Click to copy terminal command"
                       >
                         <span className="text-[#00FF88] font-bold">$</span>
@@ -463,13 +420,11 @@ export const ToolRadarView: React.FC<ToolRadarViewProps> = ({
 
                 {/* Footer Insight */}
                 <div className="pt-2 flex flex-wrap items-center justify-between gap-2 text-[11px] font-mono text-[#64748B] border-t border-white/5">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[#00FF88]">⚡ {match.timeSaved}</span>
-                    <span>•</span>
+                  <div>
                     <span>Fallback: {match.alternative}</span>
                   </div>
                   <span className="text-[#94A3B8]">
-                    Assigned: {task.owner || 'Teammate'}
+                    Owner: {task.owner || 'Teammate'}
                   </span>
                 </div>
               </div>
