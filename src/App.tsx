@@ -53,6 +53,7 @@ import {
 } from './lib/supabase';
 import { recommendNextAction } from './services/aiService';
 import { Sidebar } from './components/Sidebar';
+import { BrandLogo } from './components/BrandLogo';
 import { TopBar } from './components/TopBar';
 import { CommandPalette } from './components/CommandPalette';
 import { ToastContainer, ToastMessage } from './components/Toast';
