@@ -121,6 +121,7 @@ export default function App() {
   const [isReasoningOpen, setIsReasoningOpen] = useState(false);
   const [isShipModeOpen, setIsShipModeOpen] = useState(false);
   const [isApiKeyModalOpen, setIsApiKeyModalOpen] = useState(false);
+  const [apiKeyModalReason, setApiKeyModalReason] = useState<string | null>(null);
   const [hasCustomApiKey, setHasCustomApiKey] = useState<boolean>(() => Boolean(getCustomApiKey()));
 
   // Active Task Timer
@@ -138,6 +139,19 @@ export default function App() {
       setToasts(prev => prev.filter(t => t.id !== id));
     }, 4500);
   }, []);
+
+  // Listen to Global Gemini API Quota Exhaustion Events
+  useEffect(() => {
+    const handleQuotaExhausted = (event: any) => {
+      const msg = event?.detail?.message || 'Gemini API quota has been exhausted. Please enter your API key.';
+      setApiKeyModalReason(msg);
+      setIsApiKeyModalOpen(true);
+      addToast('warning', 'API Quota Exceeded', 'Please add or update your free Gemini API key to continue.');
+    };
+
+    window.addEventListener('halftime-quota-exhausted', handleQuotaExhausted);
+    return () => window.removeEventListener('halftime-quota-exhausted', handleQuotaExhausted);
+  }, [addToast]);
 
   const dismissToast = (id: string) => {
     setToasts(prev => prev.filter(t => t.id !== id));
@@ -853,7 +867,10 @@ export default function App() {
           onOpenShipMode={() => setIsShipModeOpen(true)}
           onOpenProjectSwitcher={() => setIsProjectSwitcherOpen(true)}
           onOpenAuth={() => setIsAuthModalOpen(true)}
-          onOpenApiKeyModal={() => setIsApiKeyModalOpen(true)}
+          onOpenApiKeyModal={() => {
+            setApiKeyModalReason(null);
+            setIsApiKeyModalOpen(true);
+          }}
           hasCustomApiKey={hasCustomApiKey}
           shipModeReady={launchChecklist.filter(i => i.status === 'COMPLETE').length >= 6}
           countdownDisplay={countdownInfo.display}
@@ -1003,7 +1020,10 @@ export default function App() {
         onTriggerScopeCut={handleExecuteScopeCut}
         onTriggerShipMode={() => setIsShipModeOpen(true)}
         onStartNextTask={handleStartNextTask}
-        onOpenApiKeyModal={() => setIsApiKeyModalOpen(true)}
+        onOpenApiKeyModal={() => {
+          setApiKeyModalReason(null);
+          setIsApiKeyModalOpen(true);
+        }}
       />
 
       {/* AI Reasoning Deep Dive Modal */}
@@ -1051,10 +1071,14 @@ export default function App() {
       {/* Gemini API Key BYOK Modal */}
       <ApiKeyModal
         isOpen={isApiKeyModalOpen}
-        onClose={() => setIsApiKeyModalOpen(false)}
+        onClose={() => {
+          setIsApiKeyModalOpen(false);
+          setApiKeyModalReason(null);
+        }}
+        quotaExceededReason={apiKeyModalReason}
         onKeyChanged={() => {
           setHasCustomApiKey(Boolean(getCustomApiKey()));
-          addToast('Gemini API key settings updated!', 'success');
+          addToast('success', 'API Key Saved', 'Gemini API key updated successfully!');
         }}
       />
 

@@ -63,11 +63,37 @@ async function postAiEndpoint(endpoint: string, body: any): Promise<any> {
 
   if (!res.ok) {
     const errorData = await res.json().catch(() => ({}));
-    if (res.status === 429 || (errorData.error && errorData.error.toLowerCase().includes('quota'))) {
+    const errText = (errorData.error || '').toLowerCase();
+    const isQuotaError = 
+      res.status === 429 || 
+      errText.includes('quota') || 
+      errText.includes('resource_exhausted') || 
+      errText.includes('rate limit') ||
+      errText.includes('too many requests') ||
+      errText.includes('exceeded your current quota');
+
+    if (isQuotaError) {
+      if (typeof window !== 'undefined') {
+        const detailMsg = customKey
+          ? 'Your custom Gemini API Key has reached its rate or usage limit. Please update your key or wait for the quota to reset.'
+          : 'The shared Gemini API quota has been exhausted. Please enter your free Gemini API key to continue without interruptions.';
+        window.dispatchEvent(
+          new CustomEvent('halftime-quota-exhausted', {
+            detail: {
+              isCustomKey: Boolean(customKey),
+              message: detailMsg,
+            },
+          })
+        );
+      }
+
       throw new Error(
-        'Gemini API quota exhausted on the shared server key. Click the API Key button in the top bar to use your own free key.'
+        customKey
+          ? 'Your Gemini API key quota was exceeded. Please update your API key in the top bar.'
+          : 'Shared server API quota exhausted. Please enter your free Gemini API key in the top bar to continue.'
       );
     }
+
     throw new Error(errorData.error || 'HALFTIME AI is temporarily unavailable. Please try again.');
   }
 
