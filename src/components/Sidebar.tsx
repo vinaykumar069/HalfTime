@@ -4,7 +4,7 @@ import {
   Lightbulb, 
   Scissors, 
   CheckSquare, 
-  Cpu, 
+  Wrench, 
   Scale, 
   Rocket, 
   ChevronRight,
@@ -32,7 +32,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   scopeCutApplied,
   isOpenMobile,
   onCloseMobile,
-  teamName = 'Team DOOM',
+  teamName = 'Squad',
   projectName = 'Hackathon Copilot',
   isDemo = false,
   onOpenProjectSwitcher,
@@ -74,8 +74,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
     },
     {
       id: 'resources',
-      label: 'API & Quotas',
-      icon: <Cpu className="w-4 h-4" />,
+      label: 'Tool Radar',
+      icon: <Wrench className="w-4 h-4" />,
     },
   ];
 

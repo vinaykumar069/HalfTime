@@ -67,7 +67,7 @@ import { OverviewDashboard } from './components/overview/OverviewDashboard';
 import { IdeaLab } from './components/ideas/IdeaLab';
 import { MVPPlanner } from './components/mvp/MVPPlanner';
 import { TaskBoard } from './components/tasks/TaskBoard';
-import { ResourcesView } from './components/resources/ResourcesView';
+import { ToolRadarView } from './components/tools/ToolRadarView';
 import { JudgeMode } from './components/judge/JudgeMode';
 import { LaunchView } from './components/launch/LaunchView';
 import confetti from 'canvas-confetti';
@@ -929,12 +929,10 @@ export default function App() {
           )}
 
           {activeTab === 'resources' && (
-            <ResourcesView
-              resources={resources}
-              onAddResource={handleAddResource}
-              onUpdateResourceUsage={handleUpdateResourceUsage}
-              onDeleteResource={handleDeleteResource}
+            <ToolRadarView
+              tasks={tasks}
               teamSkills={activeProject?.teamSkills || ['React', 'TypeScript', 'Node.js', 'Tailwind']}
+              projectName={currentProjectName}
               availableHours={Math.max(2, Math.round(secondsRemaining / 3600))}
             />
           )}
